@@ -1,0 +1,174 @@
+
+# CV
+
+chd.glm = glm(chd ~ 
+                tobacco +
+                ldl +
+                famhist +
+                log(obesity),
+              data = chd.train, family = gaussian)
+
+res = cv.glm(data=chd.test, glmfit = chd.glm, K = 2)
+
+res$delta
+
+
+
+#######################################
+# Regresión Lineal
+#
+
+# Se hace regresión lineal de la muestra de entrenamiento
+chd.lm = lm(chd ~ ., data = chd.train)
+
+# Se utiliza la función step que indica los coeficinetes que no son necesarios
+# para el cálculo de la regresión lineal
+step(chd.lm)
+
+# Los coeficientes que se deben tener en cuenta son: sbp, tobacco, ldl, famhist, 
+# typea, obesity y age.
+# Se hace de nuevo regresión lineal con estos coeficientes
+chd.lm = lm(chd ~ sbp^2 + tobacco + ldl + famhist + typea + obesity + age, data = chd.train)
+
+# Se predicen los resultados de entrenamiento con la regresión lineal
+predictTrain = predict(chd.lm, chd.train)
+
+# Se calcula la media de error de los datos de entrenamiento.
+# En la muestra se tiene la columna chd con 0 o 1, indicando si no padece la
+# enfermedad o si la padece. Para comparar los resultados se divide la
+# predicción en las muestras que tienen más del 50% de posibilidad de padecer
+# la enfermedad y se comprueba el número que no coincide con el resultado
+# que debería tener
+meanTrain.lm = mean((predictTrain > 0.5) != (chd.train[, 'chd'] > 0.5))
+
+# Se predicen los resultados de test con la regresión lineal
+predictTest = predict(chd.lm, chd.test)
+
+
+predictTest
+
+# Se calcula la media de error de los datos de test como se ha hecho con
+# los datos de train
+meanTest.lm = mean((predictTest > 0.5) != (chd.test[, 'chd'] > 0.5))
+
+print(paste("Ein calculado con Regresión Lineal: ", 
+            round(meanTrain.lm*100, digits = perDec), "%"))
+print(paste("Etest calculado con Regresión Lineal: ", 
+            round(meanTest.lm*100, digits = perDec), "%"))
+
+
+
+
+#######################################
+# Máquinas de vectores de soporte (SVM)
+#
+
+# Se carga la librería kernlab
+library(kernlab)
+
+# Se hace SVM de la muestra de entrenamiento
+chd.svm = kernlab::ksvm(chd ~ ., data = chd.train, type="C-svc")
+
+# Se predicen los resultados de entrenamiento con LDA
+predictTrain = predict(chd.svm, chd.train)
+
+# Cuando se predice con ksvm, directamente se obtiene la clase a la que
+# en teoría corresponde cada muestra.
+predictTrain
+
+# Se calcula la media de error de los datos de entrenamiento. Como ya se 
+# tienen las etiquetas de las muestras, solo hay que compararlas con las reales
+meanTrain.svm = mean(predictTrain != chd.train[, 'chd'])
+
+# Se predicen los resultados de test con SVM
+predictTest = predict(chd.svm, chd.test)
+
+# Se calcula la media de error de los datos de test
+meanTest.svm = mean(predictTest != chd.test[, 'chd'])
+
+print(paste("Ein calculado con SVM: ", 
+            round(meanTrain.svm*100, digits = perDec), "%"))
+print(paste("Etest calculado con SVM: ", 
+            round(meanTest.svm*100, digits = perDec), "%"))
+
+#######################################
+# Análisis Discriminante Lineal (LDA)
+#
+
+# Se carga la librería MASS
+library(MASS)
+
+# Se hace LDA de la muestra de entrenamiento
+chd.lda = MASS::lda(chd ~ ., data = chd.train)
+
+# Si se inspeccionan los coeficientes que devuelve LDA, se puede reducir su
+# cálculo a los más determinantes.
+chd.lda
+
+# Los coeficientes que se deben tener en cuenta son: sbp, tobacco, ldl, famhist, 
+# typea y age. Se hace de nuevo regresión lineal con estos coeficientes
+chd.lda = lda(chd ~ sbp + tobacco + ldl + famhist + typea + age, 
+              data = chd.train)
+
+# Se predicen los resultados de entrenamiento con LDA
+predictTrain = predict(chd.lda, chd.train)
+
+# Se calcula la media de error de los datos de entrenamiento. Al predecir
+# con lda, se nos ofrece directamente la clase a la que corresponde cada
+# muestra del conjunto, por lo que es suficiente con compararla con la
+# que se obtiene y así conseguir la media de error.
+meanTrain.lda = mean(predictTrain$class != chd.train[, 'chd'])
+
+# Se predicen los resultados de test con LDA
+predictTest = predict(chd.lda, chd.test)
+
+# Se calcula la media de error de los datos de test
+meanTest.lda = mean(predictTest$class != chd.test[, 'chd'])
+
+print(paste("Ein calculado con LDA: ", 
+            round(meanTrain.lda*100, digits = perDec), "%"))
+print(paste("Etest calculado con LDA: ", 
+            round(meanTest.lda*100, digits = perDec), "%"))
+
+#######################################
+# QDA
+#
+# Pese a no ser un método lineal, se hace la comprobación con este método
+
+# Se hace LDA de la muestra de entrenamiento
+chd.qda = qda(chd ~ ., data = chd.train)
+
+# Se predicen los resultados de entrenamiento con qda
+predictTrain = predict(chd.qda, chd.train)
+
+# Se calcula la media de error de los datos de entrenamiento. Al predecir
+# con ldaqda, se nos ofrece directamente la clase a la que corresponde cada
+# muestra del conjunto, por lo que es suficiente con compararla con la
+# que se obtiene y así conseguir la media de error.
+meanTrain.qda = mean(predictTrain$class != chd.train[, 'chd'])
+
+# Se predicen los resultados de test con LDA
+predictTest = predict(chd.qda, chd.test)
+
+# Se calcula la media de error de los datos de test
+meanTest.qda = mean(predictTest$class != chd.test[, 'chd'])
+
+print(paste("Ein calculado con QDA: ", 
+            round(meanTrain.qda*100, digits = perDec), "%"))
+print(paste("Etest calculado con QDA: ", 
+            round(meanTest.qda*100, digits = perDec), "%"))
+
+
+
+
+
+
+# PLA -> pocket
+# Gradiente descendente
+# Regresión Logística con Gradiente Descendente Estocástico
+# Regress_Lin_Weight_Decay 
+# Coordenada Descendente
+# MinNewton
+
+
+

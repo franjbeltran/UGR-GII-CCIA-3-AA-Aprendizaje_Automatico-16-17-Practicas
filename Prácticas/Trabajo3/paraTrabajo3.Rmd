@@ -1,0 +1,315 @@
+---
+title: "paraTrabajo3.Rmd"
+author: "Sylvia Acid"
+date: "2 de mayo de 2017"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+#setwd("~/AA/2017/R")
+knitr::opts_knit$set(root.dir = getwd()) 
+```
+
+
+*** El dataset Auto***
+
+$Description$:
+Gas mileage, horsepower, and other information for cars.
+
+```{r}
+#install.packages("ISLR")
+library("ISLR", lib.loc="~/R/x86_64-pc-linux-gnu-library/3.3")
+data("Auto")   # loads the dataset
+```
+
+
+```{r}
+class(Auto)
+colnames(Auto)
+head(Auto)
+summary(Auto)
+dim(Auto)
+```
+
+Estamos interesados en el atributo $mpg$, vamos a tratar de visualizar por pares los atributos $mpg$ y $cylinders$ mediante los comandos  $plot$ and $boxplot$.
+
+```{r, echo=FALSE}
+plot(Auto$cylinders,Auto$mpg, main=" cylinders vs mpg")
+boxplot(mpg~weight, data=Auto, xlab="weight", ylab = "mpg")
+boxplot(mpg~cut(horsepower, breaks = 10),data = Auto)
+
+```
+
+
+```{r}
+attach ( Auto )  # para simplificar y prescindir del prefijo Auto 
+#pairs(~ .,data = Auto)  # todos con todos
+pairs(~ mpg + cylinders + displacement + horsepower + weight + acceleration + year + origin, data= Auto)
+ # solo algunas
+
+```
+Para evaluar los modelos, partimos el data.frame en training y test
+
+```{r}
+set.seed(1)
+train = sample (nrow(Auto), round(nrow(Auto)*0.7)) # nos quedamos con los indices para el training
+auto.train = Auto[train,]  # podemos reservarlos aparte ... aunque con el subset no sería necesario :(
+auto.test = Auto[-train,]
+```
+
+
+```{r }
+m1 = lm(mpg ~ weight, data=Auto, subset=train)
+print(m1)
+summary(m1)
+plot(weight, mpg, main=" weight vs mpg")
+abline(m1$coefficients, col=2)
+```
+m1, nuestro primer modelo
+
+```{r}
+m2 = lm(mpg ~ horsepower, data=Auto, subset=train)
+plot(horsepower, mpg, main=" horsepower vs mpg")
+abline(m2$coefficients, col=2)
+summary(m2)
+
+m3 = lm(mpg ~ ., data=Auto, subset=train) # en función del resto o bien 
+coef(m3)
+
+
+m4 = lm(mpg ~ weight + horsepower + displacement, data=Auto, subset=train)
+summary(m4)
+
+```
+
+
+Qué funciones se pueden aplicar sobre un modelo, como m4?
+```{r}
+methods(class=class(m4))
+```
+
+De las gráficas anteriores parece que las relaciones observadas no son lineales ...
+
+Habrá que incorporar algún tipo de transformación no lineal de los atributos ...
+Por ejemplo, una forma cuadrática
+
+```{r}
+m5 = lm(mpg ~ I(weight^2), data=Auto, subset=train)
+coef(m5)
+plot(mpg~weight)
+w= m5$coefficients
+x = matrix(rep(1, length(weight)),nrow= length(weight))
+x= cbind (x, weight^2)
+y= apply(x, 1, function(vec) w %*% vec)
+points(weight, y, col=2)
+```
+
+Con los modelos, podemos obtener predicciones
+```{r}
+yhatm1Tr = predict(m1) # usa el propio training
+yhatm1Tst = predict(m1, auto.test, type= "response")
+
+etr = mean((yhatm1Tr - auto.train[,1])^2)
+etst = mean((yhatm1Tst - auto.test[,1])^2)
+
+```
+
+
+Para ver otras transformaciones p.ej. cúbicas etc..  consultar $poly()$, $log()$
+
+**Clasificación**
+
+Vamos a convertir el problema en un problema de clasificación binaria
+Se crea una variable binaria, mpg01
+
+```{r}
+Auto2 = data.frame(mpg01 = (ifelse(mpg<median(mpg),0,1)),Auto)
+```
+
+**Particionar el conjunto en training y test**
+
+```{r}
+set.seed(1)
+train = sample (nrow(Auto), round(nrow(Auto)*0.7)) # nos quedamos con los indices para el training
+Auto.train = Auto[train,]  # podemos reservarlos aparte ... aunque con el subset no sería necesario :)
+Auto.test = Auto[-train,]
+```
+
+
+Se ajusta un modelo lineal, por ejemplo de regresión logística para predecir $mpg01$.
+Se puede especificar de forma explícita los atributos a considerar a la hora de construir el modelo, el resto se ignoran.
+
+
+```{r}
+ml1 = glm(mpg01 ~ weight + horsepower + displacement,
+  family = binomial(logit), data = Auto2, subset=train)
+summary(ml1)
+
+```
+
+Una vez aprendido, veamos cómo predice...
+
+```{r}
+#Calculo de probabilidades
+probTr.ml1 = predict(ml1, type="response")
+probTstml1 = predict(ml1, data.frame(Auto2[-train,-1]), type="response")
+
+```
+
+predicciones con el modelo de regresión logística
+
+```{r}
+predTstml1 = rep(0, length(probTstml1))  # predicciones por defecto 0
+predTstml1[probTstml1 >=0.5] = 1          # >= 0.5 clase 1
+
+table(predTstml1, Auto2[-train,1])  # para el calculo del Eval
+Eval = mean(predTstml1 != Auto2[-train,1])
+cat("Eval con el modelo LR "); print(ml1$call)
+print(Eval)
+
+```
+se obtiene el Etest, para obtener el Ein?
+
+Otras familias de funciones ...
+
+```{r}
+ml2 = glm(mpg01 ~ weight + horsepower + displacement,
+  family = gaussian(identity), data = Auto2, subset=train)
+summary(ml2)
+```
+
+
+Para el preprocesamiento
+Centrado, escalado, transformación para reducir la asimetria
+Vamos a trabajar con el dataset segmentationOriginal   que trata de  
+Cell Body Segmentation problema de clasificación , células Pobremente segmentadas o Well segmentadas.
+
+```{r}
+library("AppliedPredictiveModeling", lib.loc="~/R/x86_64-pc-linux-gnu-library/3.3")
+library(help=AppliedPredictiveModeling)
+data("segmentationOriginal")
+class(segmentationOriginal)
+names(segmentationOriginal)[1:10]
+summary(segmentationOriginal[1:10])
+```
+
+```{r}
+segData = subset(segmentationOriginal, Case == "Train")
+head(segData[1:10])
+dim(segData)
+dim(segmentationOriginal)
+cellID = segData$Cell
+#unique(cellID)
+cellClass = segData$Class
+unique(cellClass)
+cellcase = segData$Case
+unique(cellcase)
+segData = segData[, -c(1:3)]
+```
+
+Se eliminan parte de la información, columnas redundantes ... Todas aquellas que contengan status ...
+```{r}
+length(grep("Status", names(segData)))
+b = (grep("Status", names(segData)))
+segData = segData[,-b]
+dim(segData)
+names(segData)
+
+```
+Eliminar las  variables con varianza 0 o muy próximas, esto es muy desbalanceadas o de valor único.
+
+```{r}
+#nearZeroVar(segData)
+```
+
+Transformación de atributos asimétricos, necesarios para la aplicación de algunos métodos de aprendizaje sensibles a distancias. Se consideran asimétricos cuando o bien la ratio entre range > 20 o bien el valor skewness se aleja de 0.
+
+\[ skewness = \frac{\sum (x_i-mean(x))^3}{(n-1)v^3/2} \]
+
+Una familia de funciones para la transformación son las propuestas por Box y Cox (1964) un parámetro nota como  $\lambda$:
+
+  $\frac{x^{\lambda} -1}{\lambda}$ si $\lambda \not = 0$ 
+  
+   o bien
+  
+  $log(x)$ si $\lambda = 0$
+  
+
+```{r}
+hist(segData$AreaCh1)
+library("e1071", lib.loc="~/R/x86_64-pc-linux-gnu-library/3.3")
+?skewness
+skewness(segData$AreaCh1)
+skewness(segData$AngleCh1)
+hist (segData$AreaCh1)
+hist(segData$AngleCh1)
+range(segData$AreaCh1)
+range(segData$AngleCh1)
+v_asimetria = apply(segData,2,skewness)
+v_asimetria[1:15]
+sort(abs(v_asimetria), decreasing = T)[1:10]
+```
+
+Con *skewness()* se halla pero no se aplica la transformación, para ello:
+
+```{r}
+#install.packages("caret")
+library("caret", lib.loc="~/R/x86_64-pc-linux-gnu-library/3.3")
+
+BoxCoxTrans(segData$KurtIntenCh1) # no transformacion
+BoxCoxTrans(segData$AngleCh1)  # no transformacion
+BoxCoxTrans(segData$AreaCh1)
+Ch1Area_trans = BoxCoxTrans(segData$AreaCh1)
+
+head(segData$AreaCh1)
+# head(Ch1Area_trans) no funciona es necesario aplicar la formula mediante predict
+predict(Ch1Area_trans,head(segData$AreaCh1))
+
+```
+
+
+
+
+es justo,la transformación con $lambda = -0.9$
+  Datos transformados:
+  
+```{r}
+hist(predict(Ch1Area_trans,head(segData$AreaCh1)))
+```
+
+
+
+**Demasiados atributos**
+Algunos redundantes o irrelevantes, es conveniente reducir dimensionalidad. El algoritmo PCA (principal components analysis) es un filtro no supervisado.
+
+```{r}
+pcaObject = prcomp(segData,center = TRUE, scale. = TRUE)
+attributes(pcaObject)
+head(pcaObject$center)
+porcentVariance = pcaObject$sd^2/sum(pcaObject$sd^2)*100
+porcentVariance[1:4]
+head(pcaObject$x[, 1:5])
+```
+
+
+```{r}
+plot(pcaObject,type="l")
+head(pcaObject$rotation[, 1:5])
+```
+Por filas vemos los atributos que forman parte de  cada uno de los componentes y sus coeficientes. Por defecto la función selecciona aquellos componentes que explican hasta el  95% de la variabilidad de los datos... se puede cambiar con argumentos thresh. 
+
+A la hora de aplicar las transformaciones, en *caret* existe una función **preProcess()** que realiza todas transformaciones mencionadas de forma ordenada.
+
+```{r}
+ObjetoTrans =  preProcess(segData, method = c("BoxCox", "center", "scale", "pca"),thres=0.8)
+ObjetoTrans
+```
+
+Para obtener un nuevo conjunto de datos, se aplican
+
+```{r}
+segTrans = predict(ObjetoTrans,segData)
+dim(segTrans)
+```

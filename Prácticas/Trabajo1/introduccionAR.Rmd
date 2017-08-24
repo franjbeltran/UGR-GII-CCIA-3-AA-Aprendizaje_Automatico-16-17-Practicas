@@ -1,0 +1,64 @@
+---
+title: "IntroduccionAR"
+author: "Sylvia Acid"
+date: "13 de febrero de 2017"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+Este fichero IntroduccionAR**.Rmd** es un documento en R Markdown. Utilizalo para comprobar si puedes generar un fichero **.pdf** (más restrictivo) de salida apartir de él. Éste contiene texto libre,  comandos de Rmarkdown además de trozos de código en R   (denominados *chunks*).
+
+Es probable que tengas que instalar paquetes adicionales  **texlive**-*<file>*  para que Knit pueda compilar correctamente el fuente y generar el pdf.
+
+p.e: 
+Al problema de  **framed.sty** not found, se resuelve ... en linux:
+
+> dnf install texlive-framed
+
+depende del S.O.
+
+A continuación un documento inicial, con información adicional...
+
+ Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.  
+
+
+```{r}
+plot(pressure)
+```
+
+Se fijan algunos parámetros, como el directorio de trabajo
+
+
+```{r}
+setwd("/mnt/A0DADA47DADA18FC/Fran/Universidad/3º/2 Cuatrimestre/AA/Mis prácticas/Práctica 1")
+```
+
+Cuando se utilizan números aleatorios, para hacer la experimentación repetible, 
+se establece un valor para la semilla del generador aleatorio.
+
+```{r}
+set.seed(3)
+```
+
+
+ 

@@ -1,0 +1,651 @@
+Práctica 3:
+
+El objetivo es dar el mejor modelo lineal dentro de los que hemos utilizado.
+Hay que dar una conclusión final. Hay que decir si ajusta bien el modelo lineal
+y si no es lineal decir cómo, porque muchos modelos que ajustemos no serán
+lineales.
+Intentamos ajutarlo de manera lineal y si no ajusta, se intenta utilizar otro
+modelo.
+
+Se pueden usar todos los paquetes que se quieran. Se pueden utilizar nuestros
+métodos pero es recomendable utilizar lo que ya está implementado.
+Ver al final para ver las funciones.
+
+No coger el dataset dígitos (si se coge utilizar además de su clase, la 
+simetría)
+
+1. Cada conjunto es diferente. Lo primero es coger y separar los datos de train
+y de test. La clase suele estar al final
+
+Comprobar si hay datos perdidos. Si hay datos perdidos hay que ver qué hacer.
+Se pueden eliminar esos datos perdidos siempre y cuando haya datos suficientes
+para eliminarlos. Si no se puede eliminar se pueden sustituir los huecos con
+la media o moda o algo así.
+
+Cambiar atributos cualitativos (verdadero/falso) por números (0/1).
+
+2. Método de evaluación. Se debe decidir antes de empezar (seleccionar el train
+y test). 
+Ver si hay artículos con el dataset que hemos seleccionado y poner la fuente y
+ver como está hecho, eso nos dará pistas.
+
+Si tenemos pocos datos podemos hacer boosting, validación cruzada, etc.
+
+
+
+
+
+Clasificacion: puede que un 13%
+Regresion: 10% de error
+
+
+
+
+
+Regresión lineal
+m1 = lm()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###############################################################################
+## Francisco Javier Caracuel Beltrán
+##
+## Curso 2016/2017 - Aprendizaje Automático - CCIA - ETSIIT
+##
+## Archivo .r asociado al proyecto final.
+##
+###############################################################################
+
+# Se establece el directorio de trabajo
+setwd("/mnt/A0DADA47DADA18FC/Fran/Universidad/3º/2 Cuatrimestre/AA/Mis prácticas/Proyecto/data")
+
+# Pintar 2 gráficas a la vez
+#par(mfrow=c(1,2))
+
+# Pintar 1 gráfica a la vez
+par(mfrow=c(1,1))
+
+# Se establece la semilla para la generación de datos aleatorios
+set.seed(1822)
+
+# Decimales en el porcentaje de los errores
+perDec = 4
+
+###############################################################################
+# Ajuste de Modelos NO-Lineales
+###############################################################################
+
+###############################################################################
+# Problema de clasificación: 13. Human Activity Recognition Using Smartphones
+###################
+
+# Para la elaboración de este proyecto, se utiliza la estructura descrita en
+# el trabajo 3 de esta misma asignatura.
+
+###############################################################################
+# 1. Comprender al problema a resolver.
+#
+# La computación basada en el ser humano es un campo emergente de investigación
+# cuyo objetivo es comprender el comportamiento humano e integrar a los 
+# usuarios y su contexto social con los sistemas informáticos.
+# Una de las aplicaciones más recientes, desafiantes y atractivas en este 
+# campo consiste en detectar el movimiento de los humanos usando teléfonos
+# móviles para recopilar información sobre las acciones de las personas.
+# Éste es el problema a resolver, partiendo de una base de datos que describe
+# el Reconocimiento de la Actividad de cada persona, construida a partir de 
+# 30 voluntarios que realizan actividades cotidianas mientras llevan un 
+# teléfono móvil en su cintura, que cuenta con sensores de movimiento que 
+# ofrecen esta información se pretende aplicar una serie de modelos lineales
+# y no lineales que consigan clasificar las distintas actividades que se
+# han registrado.
+# Los experimentos se han llevado a cabo con un grupo de treinta voluntarios
+# de entre 19 y 48. Cada persona realizó seis
+# actividades: caminar, subir escaleras, bajar escaleras, sentarse, levantarse
+# o tumbarse.
+# El teléfono usado es un Samsung Galaxy SII, del cual usan el acelerómetro y
+# giroscopio que tienen incorporado.
+#
+# Referencias:
+# - http://rstudio-pubs-static.s3.amazonaws.com/100601_62cc5079d5514969a72c34d3c8228a84.html
+
+###############################################################################
+# 2. Los conjuntos de training, validación y test usados en su caso.
+#
+# La base de datos cuenta con 561 características y 10.299 instancias obtenidas
+# de los teléfonos móviles de los voluntarios.
+# Se puede descargar a través del siguiente enlace: 
+# https://archive.ics.uci.edu/ml/machine-learning-databases/00240/UCI%20HAR%20Dataset.zip
+# El archivo descargado ya cuenta con los conjuntos de training y test
+# debidamente separados, por lo que solo es necesario su lectura y copiado en
+# memoria en sus correspondientes variables.
+# El conjunto de training dispone de 7.352 instancias, mientras que el conjunto
+# de test se encuentra con 2.947 instancias, lo que supone el 71,39% y 28,61%
+# de las muestras respectivamente.
+# 
+
+# Se leen todas las muestras de la base de datos, guardando cada una en su
+# lugar correspondiente. Para hacerlo se hace uso de un pequeño tutorial que 
+# se ha encontrado muy conveniente. Su referencia se adjunta al final de este
+# apartado.
+
+# Carpeta donde se encuentran las distintas muestras
+folder = "UCI HAR Dataset"
+
+# El fichero activity_labels.txt contiene el identificador y la etiqueta de
+# cada muestra que se puede encontrar en la base de datos.
+# Se lee el fichero y se guarda la descripción de ese fichero.
+temp = read.table(paste(folder, "activity_labels.txt", sep="/"),
+                  sep = "")
+
+# El primer conjunto contiene los identificadores, el segundo la descripción,
+# que es la que se quiere guardar
+activityLabels = as.character(temp$V2)
+
+# Se repite la operación con los atributos de cada muestra. Se lee del fichero
+# features.txt y se guarda el segundo conjunto que contiene la descripción
+# de cada atributo o característica.
+temp = read.table(paste(folder, "features.txt", sep="/"), sep = "")
+
+attributeNames = temp$V2
+
+# En las operaciones realizadas posteriormente, se ha detectado que existen
+# nombres de atributos repetidos, por lo que se deben renombrar para que 
+# sean únicos.
+# Se muestra una lista con el número de los atributos repetidos
+which(duplicated(attributeNames))
+
+# Estas dos sentencias renombran automáticamente los nombres repetidos de los
+# atributos, concatenando al final un número (1,2,3,etc) para hacerlos únicos
+attributeNames = make.names(attributeNames)
+attributeNames = make.unique(attributeNames)
+
+# Se muestra la lista donde ya no aparece ningún atributo repetido
+which(duplicated(attributeNames))
+
+# Se guardan las muestras de entrenamiento
+train.x = read.table(paste(folder, "train/X_train.txt", sep="/"), sep = "")
+
+# Al leer las muestras de un fichero en el que no se indica el nombre de cada
+# atributo o característica, se guarda con un nombre incremental. Se le asigna
+# al conjunto de entrenamiento el nombre de cada atributo (guardado 
+# anteriormente en "attributeNames")
+colnames(train.x) = attributeNames
+
+# Se guarda la clase que tiene cada muestra de entrenamiento
+train.y = read.table(paste(folder, "train/y_train.txt", sep="/"), sep = "")
+
+# Como tampoco tiene nombre la clase leída, se le asigna la que se desee
+colnames(train.y) = "Activity"
+
+# Se convierte en factor las etiquetas de las muestras para trabajar mejor con
+# ellas
+train.y$Activity = as.factor(train.y$Activity)
+
+# Se relacionan las muestras con su respectiva clase
+levels(train.y$Activity) = activityLabels
+
+# En principio no es relevante, pero se guardan también los voluntarios que 
+# capturaron las muestras
+#train.subjects = read.table(paste(folder, "train/subject_train.txt", sep="/"),
+#                  sep = "")
+
+# Se le asigna un nombre a la columna con los voluntarios/sujetos
+#names(train.subjects) = "Subject"
+
+# Se convierte en factor los sujetos que tomaron las muestras para trabajar
+# mejor con ellos
+#train.subjects$Subject = as.factor(train.subjects$Subject)
+
+# Cuando ya están todos los subconjuntos de entrenamiento creados, se
+# agrupan para los futuros cálculos
+train = cbind(train.x, train.y)
+
+# La operación que se ha realizado con las muestras de entrenamiento se repiten
+# con las muestras de test
+test.x = read.table(paste(folder, "test/X_test.txt", sep="/"), sep = "")
+colnames(test.x) = attributeNames
+
+test.y = read.table(paste(folder, "test/y_test.txt", sep="/"), sep = "")
+colnames(test.y) = "Activity"
+test.y$Activity = as.factor(test.y$Activity)
+levels(test.y$Activity) = activityLabels
+
+#test.subjects = read.table(paste(folder, "test/subject_test.txt", sep="/"),
+#                            sep = "")
+#names(test.subjects) = "Subject"
+#test.subjects$Subject = as.factor(test.subjects$Subject)
+
+test = cbind(test.x, test.y)
+
+# Se comprueban que los datos leídos sean correctos (al menos en apariencia)
+train$Partition = "Train"
+test$Partition = "Test"
+
+# Se unen todas las muestras para mostrarlas en el gráfico
+all = rbind(train, test)
+
+# Se visualizan el número de muestras que existe de cada tipo, visualizando las
+# que pertenecen a train y las que pertenecen a test
+library(ggplot2)
+
+qplot(data=all, x=all$Activity, fill=Partition)
+
+# Referencias:
+# - https://archive.ics.uci.edu/ml/datasets/human+activity+recognition+using+smartphones
+# - http://rstudio-pubs-static.s3.amazonaws.com/100601_62cc5079d5514969a72c34d3c8228a84.html
+# - https://stackoverflow.com/questions/18766700/r-rename-duplicate-col-and-rownames-subindexing
+
+###############################################################################
+# 3. Preprocesado los datos
+#
+# Las características seleccionadas para esta base de datos provienen de las
+# señales 3-axiales del acelerómetro y giroscopio. Estas señales se capturaron
+# a una velocidad constante de 50 Hz, después se filtraron usando un filtro
+# mediano y, posteriormente, de nuevo con otro filtro Butterworth de paso bajo
+# con una frecuencia de 20 Hz para eliminar ruido. De igual manera, la señal
+# de aceleración fue separada en señales de aceleracion de cuerpo y gravedad
+# a 0,3 Hz. Se aplicaron continuamente más procesos (ver referencia al final
+# de este apartado para más información) para transformar las señales, dando
+# lugar a las siguientes señales finales:
+# - tBodyAcc-XYZ
+# - tGravityAcc-XYZ
+# - tBodyAccJerk-XYZ
+# - tBodyGyro-XYZ
+# - tBodyGyroJerk-XYZ
+# - tBodyAccMag
+# - tGravityAccMag
+# - tBodyAccJerkMag
+# - tBodyGyroMag
+# - tBodyGyroJerkMag
+# - fBodyAcc-XYZ
+# - fBodyAccJerk-XYZ
+# - fBodyGyro-XYZ
+# - fBodyAccMag
+# - fBodyAccJerkMag
+# - fBodyGyroMag
+# - fBodyGyroJerkMag
+#
+# Con todas estas señales, algunas de las variables que se estimaron fueron:
+# - media
+# - desviación típica
+# - desviación media absoluta
+# - máximo
+# - mínimo
+# - rango intercuartílico
+# - entropía
+# - ángulo entre vectores, etc.
+#
+# Cuando ya se han realizado todas las operaciones correspondientes, se ofrece
+# una base de datos con 561 atributos.
+#
+# Los atributos han sido normalizados y redondeados en el intervalo [-1, 1] y
+# todos han sido preprocesados, no siendo necesario ningún tratamiento 
+# adicional.
+#
+# Se comprueba si existe algún valor perdido. Para eso se utiliza la función
+# which() y la función is.na(), que nos indican, respectivamente, la posición 
+# en la que ocurre algún hecho y si alguna posición no es correcta.
+which(is.na(all))
+
+# El valor devuelto es 0, por lo que no existen valores perdidos en ningún
+# conjunto
+
+# Referencias:
+# - UCI HAR Dataset/features_info.txt
+# - UCI HAR Dataset/README.txt
+#
+
+###############################################################################
+# 4. Selección de clases de funciones a usar.
+#
+# En este proyecto se va a comprobar el error de test con las siguientes
+# técnicas:
+# - Regresión Lineal:
+#   Al igual que en el trabajo 3, se usará la librería glmnet para aplicar
+#   regresión lineal y se aplicará generalización con regresión Ridge y Lasso.
+# - Máquinas de Soporte de Vectores (SVM)
+# - Boosting
+# - Random Forest
+# - Redes Neuronales
+#
+# El objetivo final será encontrar con qué modelo se obtiene el menor error
+# posible
+#
+
+###############################################################################
+# 5. Discutir la necesidad de regularización y en su caso la función usada.
+#
+# La primera prueba se hará con regresión lineal.
+# En la segunda prueba, que será donde se haga la regularización, se usará
+# la función cv.glmnet(), que realiza una regresión logística aplicando
+# generalización y haciendo cross-validation.
+# La segunda prueba a su vez, se divide en dos, en las que en una se hará
+# la regularización Ridge y en otra la regularización Lasso.
+# 
+
+###############################################################################
+# 6. Definir los modelos a usar y estimar sus parámetros e hyperparámetros.
+#
+# 
+
+library(glmnet)
+
+# Se ajusta el modelo con regresión lineal. Los datos de los que aprende y 
+# sus etiquetas deben coincidir, por lo que se ajusta como una matriz los
+# datos de entrenamiento.
+# Como la variable dependiente es nominal con más de dos niveles (en
+# concreto 6 clases), se debe utilizar la familia multinomial.
+# Se quiere aplicar regresión lineal de la misma manera que si se utilizara
+# lm(), por lo que el parámetro lambda debe ser establecido a 0.
+har.lm = glmnet(as.matrix(train.x), train.y$Activity, 
+                family='multinomial', 
+                lambda=0)
+
+# Se predice el resultado que tendrán las muestras de test con la regresión
+# lineal generada con las muestras de train
+har.lm.predict <- predict(har.lm, as.matrix(test.x))
+
+# Se han predicho los valores de cada muestra de test, pero se deben convertir
+# a una etiqueta que se pueda comparar con la clase a la que corresponden
+# realmente.
+# Se utiliza apply para recorrer todos los valores predichos y convertirlos en
+# su correspondiente clase
+har.lm.predict.label = apply(har.lm.predict, 1, 
+                             function(value){which(value==max(value))})
+
+# Solo queda convertir la clase en su etiqueta correspondiente, por lo que se
+# hace uso de la función mapvalues de la librería plyr, que modifica unos datos
+# de una estructura dada, indicando los originales y los que se quiere que
+# aparezcan
+library(plyr)
+
+# El intervalo de valores originales debe comenzar desde el mínimo hasta el
+# máximo
+har.lm.predict.label = mapvalues(har.lm.predict.label,
+                                 from = c(min(har.lm.predict.label):max(har.lm.predict.label)),
+                                 to = activityLabels)
+
+# Se calcula el error, comparando los generados con los reales y obteniendo
+# la media de los que no coinciden
+har.lm.mean = mean(har.lm.predict.label != as.character(test.y$Activity))
+
+# Se muestra el resultado obtenido
+print(paste("Etest calculado con Regresión Lineal: ", 
+            round(har.lm.mean*100, digits = perDec), "%"))
+
+# Se repite el proceso haciendo regresión logística con regularización Ridge.
+# Para indicar la regularización Ridge, se envía el parámetro alpha = 0.
+har.glm.ridge = cv.glmnet(as.matrix(train.x), train.y$Activity, 
+                          family='multinomial', 
+                          alpha=0)
+
+har.glm.ridge.predict <- predict(har.glm.ridge, as.matrix(test.x))
+
+har.glm.ridge.predict.label = apply(har.glm.ridge.predict, 1, 
+                                    function(value){which(value==max(value))})
+
+har.glm.ridge.predict.label = mapvalues(har.glm.ridge.predict.label,
+                                        from = c(min(har.glm.ridge.predict.label):max(har.glm.ridge.predict.label)),
+                                        to = activityLabels)
+
+har.glm.ridge.mean = mean(har.glm.ridge.predict.label != as.character(test.y$Activity))
+
+print(paste("Etest calculado con Regresión Logística con regularización Ridge: ", 
+            round(har.glm.ridge.mean*100, digits = perDec), "%"))
+
+# Se repite el proceso haciendo regresión logística con regularización Lasso.
+# Para indicar la regularización Lasso, se envía el parámetro alpha = 1.
+har.glm.lasso = cv.glmnet(as.matrix(train.x), train.y$Activity, 
+                          family='multinomial', 
+                          alpha=1)
+
+har.glm.lasso.predict <- predict(har.glm.lasso, newx=as.matrix(test.x))
+
+har.glm.lasso.predict.label = apply(har.glm.lasso.predict, 1, 
+                                    function(value){which(value==max(value))})
+
+har.glm.lasso.predict.label
+
+har.glm.lasso.predict.label[which(har.glm.lasso.predict.label==6)] = 600
+unique(har.glm.lasso.predict.label)
+unique(activityLabels)
+
+har.glm.lasso.predict.label = mapvalues(har.glm.lasso.predict.label,
+                                        from = c(595:600),
+                                        to = activityLabels)
+
+har.glm.lasso.mean = mean(har.glm.lasso.predict.label != as.character(test.y$Activity))
+
+print(paste("Etest calculado con Regresión Logística con regularización Lasso: ", 
+            round(har.glm.lasso.mean*100, digits = perDec), "%"))
+
+# Referencias:
+# - http://ricardoscr.github.io/how-to-use-ridge-and-lasso-in-r.html
+
+###############################################################################
+# 7. Selección y ajuste modelo final.
+#
+
+###############################################################################
+# 8. Estimacion del error E out del modelo lo más ajustada posible.
+#
+# 
+
+###############################################################################
+# 9. Discutir y justificar la calidad del modelo encontrado y las razones por 
+# las que considera que dicho modelo es un buen ajuste que representa 
+# adecuadamente los datos muestrales.
+#
+
+
+
+
+
+
+X.labels <- as.character(read.table(paste(folder, '/features.txt', sep=''))[,2])
+for (i in 1:length(X.labels)) {
+  # Hay etiquetas repetidas. Las diferenciamos asignándoles un número.
+  i_rep <- which(X.labels[i]==X.labels)
+  if (length(i_rep)>1) {
+    for (j in 1:length(i_rep)) {
+      X.labels[i_rep[j]] <- paste(X.labels[i_rep[j]], '-', j, sep='')
+    }
+  }
+}
+
+X_train <- read.table(paste(folder, '/train/X_train.txt', sep=''))
+X_test <- read.table(paste(folder, '/test/X_test.txt', sep=''))
+colnames(X_train) <- X.labels
+colnames(X_test) <- X.labels
+
+
+# Cargamos los valores de salida
+
+Y.labels <- read.table(paste(folder, '/activity_labels.txt', sep=''))
+Y.labels[,'V2'] <- as.character(Y.labels[,'V2'])
+
+Y_train <- read.table(paste(folder, '/train/y_train.txt', sep=''))
+Y_train <- cbind(n=1:nrow(Y_train), Y_train)
+Y_test <- read.table(paste(folder, '/test/y_test.txt', sep=''))
+Y_test <- cbind(n=1:nrow(Y_test), Y_test)
+
+Y_train <- merge(Y_train,Y.labels, by.x='V1', by.y='V1', all.x=T)
+Y_train <- Y_train[order(Y_train$n),'V2']
+Y_test <- merge(Y_test,Y.labels, by.x='V1', by.y='V1', all.x=T)
+Y_test <- Y_test[order(Y_test$n),'V2']
+
+
+# Creamos el modelo
+modelo_lineal_lasso <- cv.glmnet(as.matrix(X_train), Y_train, 
+                                 family = 'multinomial', alpha = 1)
+#modelo_lineal_lasso <- glmnet(as.matrix(X_train), Y_train, lambda=exp(-8.1), family = 'multinomial', alpha = 1)
+plot(modelo_lineal_lasso)
+
+# Obtenemos la salida
+y <- predict(modelo_lineal_lasso, newx=as.matrix(X_test), s='lambda.min') #s='lambda.1se'
+# Adaptamos la salida para poder compararla con el vector de etiquetas
+y <- factor(colnames(y)[apply(y,1,function(x) which(x==max(x)))])
+
+# Medimos el error
+print(paste("Error de clasificación del modelo lineal con weight decay (lasso): ", mean(y!=Y_test), sep=''))
+
+
+
+
+
+
+
+
+
+
+library("e1071")
+
+
+svm_tune <- tune(svm, train.x=as.matrix(train.x), train.y=train.y$Activity, 
+                 kernel="radial", ranges=list(cost=10^(-1:2), gamma=c(.5,1,2)))
+
+print(svm_tune)
+
+
+svm_model_after_tune <- svm(Activity ~ ., data=train, kernel="radial", cost=1, gamma=0.5)
+summary(svm_model_after_tune)
+
+pred <- predict(svm_model_after_tune, as.matrix(test.x))
+
+table(pred, test.y$Activity)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+library(plyr)
+numPredictors = ncol(train.x) 
+dataSd = colwise(sd)(train.x[, 1:numPredictors])
+dataSd$stat = "Predictor Variable Standard Deviation"
+dataMean = colwise(mean)(train.x[, 1:numPredictors])
+dataMean$stat = "Predictor Variable Mean"
+library(reshape2)
+temp = melt(rbind(dataMean, dataSd), c("stat"))
+qplot(data = temp, x = value, binwidth = 0.025) + facet_wrap(~stat, ncol = 1)
+
+
+library(lattice)
+library(caret)
+
+zScaleTrain = preProcess(train.x[, 1:numPredictors])
+scaledX = predict(zScaleTrain, train.x[, 1:numPredictors])
+
+head(names(scaledX))
+
+
+nzv = nearZeroVar(scaledX, saveMetrics = TRUE)
+summary(nzv)
+
+
+
+head(nzv[order(nzv$freqRatio, decreasing = TRUE), ], n = 20)
+
+
+correlatedPredictors = findCorrelation(cor(scaledX), cutoff = 0.8)
+
+reducedCorrelationX = scaledX[, -correlatedPredictors]
+head(names(reducedCorrelationX))
+
+
+pcaTrain = preProcess(scaledX, method = "pca", thresh = 0.99)
+
+
+pcaX = predict(pcaTrain, scaledX)
+head(names(pcaX))
+
+summary(pcaX)
+
+
+
+
+
+levels(obj) = attributeNames
+
+obj <- svm(pcaX, data = train,
+                gamma = 2^c(-8,-4,0,4), cost = 2^c(-8,-4,-2,0))
+
+summary(obj)
+
+
+y <- predict(obj, test.x)
+
+mean(y != dat_test[,'y'])
+
+
+
+
+modelo_svm <- svm(train$Activity ~ ., data=train.x, kernel='radial', 
+                  cost=0.5, gamma=1)
+
+# Calculamos el error de clasificación
+y <- predict(modelo_svm, as.matrix(test))
+mean(y != dat_test[,'y'])
+
+
+
+
+
+
+library(parallel)
+cl = parallel::makeForkCluster(nnodes = detectCores()/2)
+setDefaultCluster(cl)
+library(doParallel)
+
+
+registerDoParallel(cl)
+getDoParWorkers()
+
+
+saveFile = paste("", "modelRF.RData", sep = "")
+if (!file.exists(saveFile)) {
+  rfCtrl = trainControl(method = "cv", number = length(cvGroupIndices), index = cvGroupIndices, 
+                        classProbs = TRUE)
+  modelRF = train(reducedCorrelationX, train$activityID, method = "rf", trControl = rfCtrl, 
+                  tuneGrid = data.frame(.mtry = c(2, 5, 10, 15, 20)), importance = TRUE)
+  save(rfCtrl, modelRF, correlatedPredictors, zScaleTrain, file = saveFile)
+}
+if (!exists("modelRF")) {
+  load(saveFile)
+}
+print(modelRF)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

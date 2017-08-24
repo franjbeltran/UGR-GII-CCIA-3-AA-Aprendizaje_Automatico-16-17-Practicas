@@ -1,0 +1,78 @@
+﻿Trabajo 2
+
+
+- Mejorar el PLA y convertirlo a Pocket.
+
+
+- Poner 2 funciones:
+
+	f = function(u, v){
+	
+		
+# No es necesario pasarle los parámetros
+		
+dx = function(){
+		
+			
+u, v
+		
+		
+}
+		
+		
+
+# No es necesario pasarle los parámetros
+		
+dy = function(){
+		
+			
+u, v
+		
+		
+}
+	
+	
+c(dx(), dy())
+	
+	
+}
+	
+
+
+- Para el gradiente descendente:
+
+	
+	-> Parámetros que necesita:
+	
+	mu = 0.1
+	
+	iter = x
+	
+	threshold
+	
+	wini (punto inicial)
+	
+	
+	-> Funciones que necesita:
+	
+	dx
+	
+	dy
+	
+	
+	-> Devuelve
+ 3 valores. Valor de la función, con respecto a X, con respecto a Y.
+
+
+
+
+
+f= expression (u*exp....)
+Los resultados que saldrían:
+24,.....
+4,96.....
+
+duv = deriv(f, c("u", "v"))
+u=1
+v=1
+eval(duv)

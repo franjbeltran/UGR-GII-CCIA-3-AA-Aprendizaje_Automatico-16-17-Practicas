@@ -1,0 +1,10 @@
+13. Human Activity Recognition Using Smartphones
+
+Bibliografía:
+- https://archive.ics.uci.edu/ml/datasets/human+activity+recognition+using+smartphones
+- http://rstudio-pubs-static.s3.amazonaws.com/100601_62cc5079d5514969a72c34d3c8228a84.html
+
+
+
+- http://www.tdx.cat/bitstream/handle/10803/6178/05Capitulo4.pdf?sequence=5
+
